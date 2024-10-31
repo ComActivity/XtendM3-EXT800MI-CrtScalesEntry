@@ -21,8 +21,7 @@
  ***************************************************************
  */
  
- import groovy.lang.Closure
- 
+ import groovy.lang.Closure;
  import java.time.LocalDate;
  import java.time.LocalDateTime;
  import java.time.format.DateTimeFormatter;
@@ -35,7 +34,7 @@
 /*
  *Modification area - M3
  *Nbr               Date      User id     Description
- *BF_R_2001         20241015  DRIESR      Update Attributes in batch mode
+ *BF_R_2001         20241015  DRIESR      Add/Update Attributes in ATS101 for multiple lot numbers
  *
  */
  
@@ -55,12 +54,13 @@ public class EXT850 extends ExtendM3Batch {
   private String inITNO;
   private String inATVA;
   private String inATNR;
+  private String inTXT1;
   private String errorM;
   private int XXCONO;
   private String noseries01; 
-  private boolean scenario1_matched;
-  private boolean scenario2_matched;
-  private boolean scenario3_matched;
+  private boolean scenario1Matched;
+  private boolean scenario2Matched;
+  private boolean scenario3Matched;
   private String CINO2;
   private String oFEID;
   private String oFNCN;
@@ -85,16 +85,7 @@ public class EXT850 extends ExtendM3Batch {
   private String savedCUAM;
   private String savedINYR;
   
-  private List lstQITests_Range;
-  private List lstQITests_Target;
-  private List lstQITests_Quality;
-  private List lstTestResults_Range;
-  private List lstSortedTestResults_Range;
-  private List lstTestResults_Target;
-  private List lstSortedTestResults_Target;
-  private List lstTestResults_Quality;
-  private List lstSortedTestResults_Quality;
-  private List lstMatchedRecords;
+ 
   private int lineNo;
   
   public EXT850(LoggerAPI logger, DatabaseAPI database, BatchAPI batch, MICallerAPI miCaller, ProgramAPI program, IonAPI ion) {
@@ -151,7 +142,7 @@ public class EXT850 extends ExtendM3Batch {
     DBContainer container = query.getContainer();
     container.set("LMCONO", XXCONO);
     container.set("LMITNO", inITNO);
-    query.readAll(container, 2, releasedItemProcessor);
+    query.readAll(container, 2, 1000, releasedItemProcessor);
   }
   
   /*
@@ -216,7 +207,8 @@ public class EXT850 extends ExtendM3Batch {
    * Process/distribute grading error report   
    *
   */
-  def processerror(String errorm) {
+  
+  private void processerror(String errorm) {
     def params60 = ["REPO": 'GRADE01', "REPV": 'GRADE01', "SUBJ": 'Error in S/Docket ' + inBREF, "EMTX": errorM, "SF1F": oBANO, "SF1T": oBANO ]; 
     def callback60 = {
       Map<String, String> response ->
@@ -229,7 +221,7 @@ public class EXT850 extends ExtendM3Batch {
    * Set loader/carrier/agreementno on lotnumber MILOMA   
    *
    */
-  def setLot(String loader, String carrier, String supplier, String agreement) {
+  private void setLot(String loader, String carrier, String supplier, String agreement) {
     def params02 = ["ITNO": oITNO, "BANO": oBANO, "ARLA": loader.trim(), "CFI2": carrier.trim(), "CFI3": agreement.trim(), "SUNO": supplier.trim() ]; 
     def callback02 = {
       Map<String, String> response ->
