@@ -20,11 +20,9 @@
  *                                                             *
  ***************************************************************
  */
- 
- import groovy.lang.Closure;
+
  import java.time.LocalDate;
  import java.time.LocalDateTime;
- import java.time.ZoneId;
  import java.time.format.DateTimeFormatter;
 
  /*
@@ -33,7 +31,7 @@
  *BF_R_2001         20241015  DRIESR      Add/Update Attributes in ATS101 for multiple lot numbers
  *
  */
- 
+
  /*
   * Add/Update Attributes for Grading 2.0 H5 SDK
  */
@@ -47,15 +45,13 @@ public class AddAttributes extends ExtendM3Transaction {
 
   private String divi;
   private String faci;
-  private String xnow;
   private String bref;
   private String atid;
-  private String xjtm;
   private String itno;
   private String atva;
   private String txt1;
   private int XXCONO;
-  
+
   public AddAttributes(MIAPI mi, DatabaseAPI database, MICallerAPI miCaller, LoggerAPI logger, ProgramAPI program,  IonAPI ion) {
     this.mi = mi;
     this.database = database;
@@ -64,12 +60,12 @@ public class AddAttributes extends ExtendM3Transaction {
     this.program = program;
     this.ion = ion;
   }
-  
+
   public void main() {
     divi = mi.inData.get("DIVI") == null ? '' : mi.inData.get("DIVI").trim();
   	if (divi == "?") {
   	  divi = "";
-  	} 
+  	}
   	faci = mi.inData.get("FACI") == null ? '' : mi.inData.get("FACI").trim();
   	if (faci == "?") {
   	  faci = "";
@@ -94,7 +90,7 @@ public class AddAttributes extends ExtendM3Transaction {
   	if (txt1 == "?") {
   	  txt1 = "";
   	}
-  	
+
   	if (divi.isEmpty()) {
       mi.error("division must be entered");
       return;
@@ -107,19 +103,19 @@ public class AddAttributes extends ExtendM3Transaction {
       mi.error("lot reference must be entered");
       return;
     }
-    
+
     if (atid.equals("CHM04") && txt1.isEmpty()) {
       mi.error("comments must be entered");
-      return    
+      return
     }
-    
+
     if (!atid.equals("CHM04") && !atid.isEmpty() && atva.isEmpty()) {
        mi.error("attribute value must be entered");
       return;
     }
-    
+
     XXCONO= program.LDAZD.CONO;
-    
+
      // - validate item number
     if (!itno.isEmpty()) {
       DBAction queryMITMAS = database.table("MITMAS").index("00").selection("MMITNO").build();
@@ -141,10 +137,10 @@ public class AddAttributes extends ExtendM3Transaction {
       if(!queryCFACIL.read(CFACIL)) {
         mi.error("facility does not exist.");
         return;
-      } 
+      }
     }
- 
-    // - validate attribute ID   
+
+    // - validate attribute ID
     if (!atid.isEmpty()) {
       DBAction queryMATRMA = database.table("MATRMA").index("00").build();
       DBContainer MATRMA = queryMATRMA.getContainer();
@@ -153,7 +149,7 @@ public class AddAttributes extends ExtendM3Transaction {
       if(!queryMATRMA.read(MATRMA)) {
         mi.error("attribute ID does not exist.");
         return;
-      } 
+      }
     }
 
     // - validate division
@@ -165,12 +161,12 @@ public class AddAttributes extends ExtendM3Transaction {
       if(!queryCMNDIV.read(CMNDIV)) {
         mi.error("Division does not exist.");
         return;
-    } 
+    }
   }
-    
+
   String referenceId = UUID.randomUUID().toString();
   setupData(referenceId);
-    
+
   if (atid.equals("CHM04")) {
     def params = ["JOB": "EXT851", "TX30": "UpdateComments", "XCAT": "010", "SCTY": "1", "XNOW": "1", "UUID": referenceId]; // ingle run - now
     miCaller.call("SHS010MI", "SchedXM3Job", params, { result -> });
@@ -190,7 +186,7 @@ public class AddAttributes extends ExtendM3Transaction {
     }
     int currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")).toInteger();
   	int currentTime = Integer.valueOf(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HHmmss")));
-  	
+
     DBAction actionEXTJOB = database.table("EXTJOB").build();
   	DBContainer EXTJOB = actionEXTJOB.getContainer();
   	EXTJOB.set("EXCONO", XXCONO);
@@ -204,4 +200,3 @@ public class AddAttributes extends ExtendM3Transaction {
     actionEXTJOB.insert(EXTJOB);
   }
 }
-
